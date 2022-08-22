@@ -12,37 +12,14 @@ const Square: React.FC<{value: string, onClick: () => void}> = ({value, onClick}
 	);
 }
 
-const Board: React.FC = () => {
-
-	const [squares, setSquares] = useState<string[]>(Array(9).fill(''))
-	const [xIsNext, setXNext] = useState<boolean>(true)
+const Board: React.FC<{squares: string[], onClick: (i: number) => void}> = ({squares, onClick}) => {
 
 	const renderSquare = (i: number) => {
-		return <Square value={squares[i]} onClick={() => handleClick(i)} />
-	}
-
-	const handleClick = (i: number) => {
-		if (calculateWinner(squares) || squares[i] !== '') {
-			return ;
-		}
-		const local_squares = squares.slice()
-		local_squares[i] = xIsNext ? 'X' : 'O'
-		setSquares(local_squares)
-		setXNext(!xIsNext)
-	}
-
-	const winner: string | null = calculateWinner(squares)
-	let status: string;
-	if (winner) {
-		status = `Winner: ${winner}`
-	}
-	else {
-		status = `Next player: ${xIsNext ? 'X' : 'O'}`
+		return <Square value={squares[i]} onClick={() => onClick(i)} />
 	}
 
 	return (
 		<div>
-			<div className='status'>{status}</div>
 			<div className='board-row'>
 				{renderSquare(0)}
 				{renderSquare(1)}
@@ -63,14 +40,60 @@ const Board: React.FC = () => {
 }
 
 const Game: React.FC = () => {
+
+	const [history, setHistory] = useState<string[][]>([Array(9).fill('')])
+	const [xIsNext, setXNext] = useState<boolean>(true)
+	const [stepNumber, setStepNumber] = useState<number>(0)
+	
+	const handleClick = (i: number) => {
+		const local_history = history.slice(0, stepNumber + 1)
+		const current = local_history[local_history.length - 1]
+		const squares = current.slice()
+		if (calculateWinner(squares) || squares[i] !== '') {
+			return
+		}
+		squares[i] = xIsNext ? 'X' : 'O'
+		setHistory(local_history.concat([squares]))
+		setXNext(!xIsNext)	
+		setStepNumber(local_history.length)
+		console.log(history)
+	}
+	
+	const jumpTo = (step: number) => {
+		setStepNumber(step)
+		setXNext(step % 2 === 0)
+		console.log(current)
+	}
+
+	const current = history[stepNumber]
+	const winner = calculateWinner(current)
+
+	let status: string;
+	if (winner) {
+		status = `Winner: ${winner}`
+	}
+	else {
+		status = `Next player: ${xIsNext ? 'X' : 'O'}`
+	}
+
+	const moves = history.map((step, move) => {
+		const desc = move ? `Go to move #${move}` : 'Go to game start'
+
+		return (
+			<li key={move}>
+				<button onClick={() => jumpTo(move)}>{desc}</button>
+			</li>
+		)
+	})
+
 	return (
 		<div className='game'>
 			<div className='game-board'>
-				<Board />
+				<Board squares={current} onClick={handleClick}/>
 			</div>
 			<div className='game-info'>
-				<div>{/* status */}</div>
-				<ol>{/* TODO */}</ol>
+				<div>{status}</div>
+				<ol>{moves}</ol>
 			</div>
 		</div>
 	)
